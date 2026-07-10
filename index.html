@@ -22,6 +22,8 @@
       --yellow-soft: #f2e3b5;
       --blue: #5680c2;
       --blue-soft: #d7e0ef;
+      --blue-light: #9fb5d6;
+      --magenta: #a34f6f;
       --shadow: 0 18px 50px rgba(24, 26, 28, 0.08);
     }
 
@@ -308,8 +310,10 @@
 
     .bar-segment[data-kind="token"] { background: var(--coral); }
     .bar-segment[data-kind="position"] { background: var(--yellow); }
-    .bar-segment[data-kind="blocks"] { background: var(--teal); }
-    .bar-segment[data-kind="norm"] { background: var(--blue); }
+    .bar-segment[data-kind="attention"] { background: var(--teal); }
+    .bar-segment[data-kind="blockNorms"] { background: var(--blue); }
+    .bar-segment[data-kind="ffn"] { background: var(--magenta); }
+    .bar-segment[data-kind="norm"] { background: var(--blue-light); }
     .bar-segment[data-kind="output"] { background: var(--ink); }
 
     .legend {
@@ -334,8 +338,10 @@
 
     .legend-item[data-kind="token"] .swatch { background: var(--coral); }
     .legend-item[data-kind="position"] .swatch { background: var(--yellow); }
-    .legend-item[data-kind="blocks"] .swatch { background: var(--teal); }
-    .legend-item[data-kind="norm"] .swatch { background: var(--blue); }
+    .legend-item[data-kind="attention"] .swatch { background: var(--teal); }
+    .legend-item[data-kind="blockNorms"] .swatch { background: var(--blue); }
+    .legend-item[data-kind="ffn"] .swatch { background: var(--magenta); }
+    .legend-item[data-kind="norm"] .swatch { background: var(--blue-light); }
     .legend-item[data-kind="output"] .swatch { background: var(--ink); }
 
     .legend-item[data-empty="true"] {
@@ -500,7 +506,9 @@
           <div class="bar" role="img" id="parameter-bar" aria-label="Proportional parameter count breakdown">
             <div class="bar-segment" data-kind="token"></div>
             <div class="bar-segment" data-kind="position"></div>
-            <div class="bar-segment" data-kind="blocks"></div>
+            <div class="bar-segment" data-kind="attention"></div>
+            <div class="bar-segment" data-kind="blockNorms"></div>
+            <div class="bar-segment" data-kind="ffn"></div>
             <div class="bar-segment" data-kind="norm"></div>
             <div class="bar-segment" data-kind="output"></div>
           </div>
@@ -516,10 +524,20 @@
               <span class="legend-name">Position embeddings<span class="legend-detail">context × dimension</span></span>
               <span class="legend-value" data-value>786K</span>
             </div>
-            <div class="legend-item" data-kind="blocks">
+            <div class="legend-item" data-kind="attention">
               <span class="swatch" aria-hidden="true"></span>
-              <span class="legend-name">Transformer blocks<span class="legend-detail">attention, MLP + layer norms</span></span>
-              <span class="legend-value" data-value>85.1M</span>
+              <span class="legend-name">Attention<span class="legend-detail">QKV + output projections</span></span>
+              <span class="legend-value" data-value>28.3M</span>
+            </div>
+            <div class="legend-item" data-kind="blockNorms">
+              <span class="swatch" aria-hidden="true"></span>
+              <span class="legend-name">Layer norms ×2<span class="legend-detail">scale + bias in every block</span></span>
+              <span class="legend-value" data-value>36.9K</span>
+            </div>
+            <div class="legend-item" data-kind="ffn">
+              <span class="swatch" aria-hidden="true"></span>
+              <span class="legend-name">Feed-forward networks<span class="legend-detail">4× expansion + projection</span></span>
+              <span class="legend-value" data-value>56.7M</span>
             </div>
             <div class="legend-item" data-kind="norm">
               <span class="swatch" aria-hidden="true"></span>
@@ -575,11 +593,13 @@
       function calculate(dimension, layers, vocabSize, contextLength, hasQkvBias, hasWeightTying) {
         const token = vocabSize * dimension;
         const position = contextLength * dimension;
-        const perBlockBiasAndNorm = hasQkvBias ? 13 * dimension : 10 * dimension;
-        const blocks = layers * ((12 * dimension * dimension) + perBlockBiasAndNorm);
+        const attentionBiases = hasQkvBias ? 4 * dimension : dimension;
+        const attention = layers * ((4 * dimension * dimension) + attentionBiases);
+        const blockNorms = layers * 4 * dimension;
+        const ffn = layers * ((8 * dimension * dimension) + (5 * dimension));
         const norm = 2 * dimension;
         const output = hasWeightTying ? 0 : vocabSize * dimension;
-        return { token, position, blocks, norm, output };
+        return { token, position, attention, blockNorms, ffn, norm, output };
       }
 
       function render() {
