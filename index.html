@@ -195,13 +195,6 @@
       box-shadow: 0 0 0 3px rgba(22, 134, 122, 0.15);
     }
 
-    .field input[readonly] {
-      border-color: var(--line);
-      background: #f1f1ee;
-      color: #71757a;
-      cursor: default;
-    }
-
     .field-note {
       display: block;
       margin-top: 7px;
@@ -512,7 +505,7 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <h1 id="page-title">Build a model.<br><em>Count every weight.</em></h1>
-        <p class="intro-copy">Adjust the shape of a GPT-2-style transformer and see where its parameters live. Token and position embeddings use the original GPT-2 constants.</p>
+        <p class="intro-copy">Adjust the shape, vocabulary, and working context of a GPT-2-style transformer and see where every parameter lives.</p>
       </section>
 
       <section class="workspace" aria-label="GPT-2 parameter calculator">
@@ -534,14 +527,14 @@
 
             <div class="field">
               <label for="vocab-size">Vocabulary size</label>
-              <input id="vocab-size" type="text" value="50,257" readonly aria-readonly="true">
-              <span class="field-note">Fixed by GPT-2 tokenization</span>
+              <input id="vocab-size" name="vocab-size" type="number" min="1" max="10000000" step="1" value="50257" inputmode="numeric">
+              <span class="field-note">Entries in the tokenizer vocabulary</span>
             </div>
 
             <div class="field">
               <label for="context-length">Context length</label>
-              <input id="context-length" type="text" value="1,024" readonly aria-readonly="true">
-              <span class="field-note">Fixed positional window</span>
+              <input id="context-length" name="context-length" type="number" min="1" max="1000000" step="1" value="1024" inputmode="numeric">
+              <span class="field-note">Maximum sequence positions</span>
             </div>
           </div>
 
@@ -619,10 +612,10 @@
 
   <script>
     (() => {
-      const VOCAB_SIZE = 50257;
-      const CONTEXT_LENGTH = 1024;
       const dimensionInput = document.querySelector('#embedding-dim');
       const layersInput = document.querySelector('#layers');
+      const vocabSizeInput = document.querySelector('#vocab-size');
+      const contextLengthInput = document.querySelector('#context-length');
       const qkvBiasInput = document.querySelector('#qkv-bias');
       const weightTyingInput = document.querySelector('#weight-tying');
       const totalShort = document.querySelector('#total-short');
@@ -650,22 +643,24 @@
         return Math.min(Number(input.max), Math.max(Number(input.min), value));
       }
 
-      function calculate(dimension, layers, hasQkvBias, hasWeightTying) {
-        const token = VOCAB_SIZE * dimension;
-        const position = CONTEXT_LENGTH * dimension;
+      function calculate(dimension, layers, vocabSize, contextLength, hasQkvBias, hasWeightTying) {
+        const token = vocabSize * dimension;
+        const position = contextLength * dimension;
         const perBlockBiasAndNorm = hasQkvBias ? 13 * dimension : 10 * dimension;
         const blocks = layers * ((12 * dimension * dimension) + perBlockBiasAndNorm);
         const norm = 2 * dimension;
-        const output = hasWeightTying ? 0 : VOCAB_SIZE * dimension;
+        const output = hasWeightTying ? 0 : vocabSize * dimension;
         return { token, position, blocks, norm, output };
       }
 
       function render() {
         const dimension = boundedInteger(dimensionInput, 768);
         const layers = boundedInteger(layersInput, 12);
+        const vocabSize = boundedInteger(vocabSizeInput, 50257);
+        const contextLength = boundedInteger(contextLengthInput, 1024);
         const hasQkvBias = qkvBiasInput.checked;
         const hasWeightTying = weightTyingInput.checked;
-        const counts = calculate(dimension, layers, hasQkvBias, hasWeightTying);
+        const counts = calculate(dimension, layers, vocabSize, contextLength, hasQkvBias, hasWeightTying);
         const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
         totalShort.textContent = compact(total);
@@ -686,7 +681,7 @@
         outputDetail.textContent = hasWeightTying ? 'shared with token embeddings' : 'vocab × dimension';
         architectureNote.textContent = `Uses ${hasWeightTying ? 'tied' : 'separate'} input/output embeddings, ${hasQkvBias ? 'QKV bias' : 'no QKV bias'}, 4× MLP expansion, projection and MLP biases, two layer norms per block, and a final layer norm.`;
 
-        parameterBar.setAttribute('aria-label', `Parameter breakdown for a ${layers}-layer model with embedding dimension ${dimension}, ${hasQkvBias ? 'with' : 'without'} QKV bias and ${hasWeightTying ? 'with' : 'without'} weight tying. Total: ${integerFormat.format(total)} parameters.`);
+        parameterBar.setAttribute('aria-label', `Parameter breakdown for a ${layers}-layer model with embedding dimension ${dimension}, vocabulary size ${vocabSize}, context length ${contextLength}, ${hasQkvBias ? 'with' : 'without'} QKV bias and ${hasWeightTying ? 'with' : 'without'} weight tying. Total: ${integerFormat.format(total)} parameters.`);
 
         presets.forEach((preset) => {
           const active = Number(preset.dataset.dim) === dimension && Number(preset.dataset.layers) === layers;
@@ -694,10 +689,17 @@
         });
       }
 
-      [dimensionInput, layersInput].forEach((input) => {
+      const numericDefaults = {
+        'embedding-dim': 768,
+        layers: 12,
+        'vocab-size': 50257,
+        'context-length': 1024
+      };
+
+      [dimensionInput, layersInput, vocabSizeInput, contextLengthInput].forEach((input) => {
         input.addEventListener('input', render);
         input.addEventListener('change', () => {
-          input.value = boundedInteger(input, input.id === 'embedding-dim' ? 768 : 12);
+          input.value = boundedInteger(input, numericDefaults[input.id]);
           render();
         });
       });
