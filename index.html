@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore how embedding width and layer count shape a GPT-2 model's parameter count.">
   <title>GPT-2 Parameter Counter</title>
+  <link rel="stylesheet" href="https://www.gilesthomas.com/styles/base.css">
   <style>
     :root {
       color-scheme: light;
       --ink: #181a1c;
       --muted: #656a70;
       --line: #d8dadc;
-      --paper: #f7f6f2;
+      --paper: #fbe9d0;
       --panel: #ffffff;
       --coral: #e66548;
       --coral-soft: #f6d7cd;
@@ -28,13 +29,14 @@
       box-sizing: border-box;
     }
 
-    body {
+    body.content {
       margin: 0;
+      max-width: none;
+      padding: 0;
       min-width: 320px;
       min-height: 100vh;
       background: var(--paper);
       color: var(--ink);
-      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
     }
 
@@ -49,76 +51,22 @@
       padding: 30px 0 48px;
     }
 
-    .masthead {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 22px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-    }
-
-    .brand-mark {
-      display: grid;
-      grid-template-columns: repeat(2, 7px);
-      gap: 3px;
-      width: 17px;
-      height: 17px;
-    }
-
-    .brand-mark span {
-      background: var(--ink);
-    }
-
-    .brand-mark span:nth-child(2) {
-      background: var(--coral);
-    }
-
-    .edition {
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.72rem;
-    }
-
     main {
-      padding-top: clamp(38px, 7vw, 82px);
+      padding-top: clamp(24px, 5vw, 56px);
+    }
+
+    .support-link {
+      margin: 0.5ex 0 0;
+      font-size: 0.9rem;
     }
 
     .intro {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-      gap: 48px;
-      align-items: end;
-      margin-bottom: 42px;
-    }
-
-    h1 {
-      max-width: 770px;
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(3rem, 7.2vw, 6.2rem);
-      font-weight: 400;
-      line-height: 0.92;
-      letter-spacing: 0;
-    }
-
-    h1 em {
-      color: var(--coral);
-      font-weight: 400;
+      max-width: 720px;
+      margin-bottom: 30px;
     }
 
     .intro-copy {
-      max-width: 390px;
-      margin: 0 0 5px;
+      margin: 0;
       color: var(--muted);
       font-size: 1rem;
       line-height: 1.65;
@@ -183,7 +131,7 @@
       background: #fff;
       color: var(--ink);
       padding: 0 13px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-family: IBMPlexMono-Medium, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 1.05rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
@@ -322,7 +270,7 @@
 
     .total {
       display: block;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: Arvo, Georgia, "Times New Roman", serif;
       font-size: clamp(2.5rem, 5.5vw, 5rem);
       font-weight: 400;
       line-height: 1;
@@ -333,7 +281,7 @@
       flex: 0 0 auto;
       margin-bottom: 8px;
       color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-family: IBMPlexMono-Medium, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.7rem;
       font-variant-numeric: tabular-nums;
     }
@@ -414,7 +362,7 @@
 
     .legend-value {
       text-align: right;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-family: IBMPlexMono-Medium, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-variant-numeric: tabular-nums;
     }
 
@@ -422,17 +370,12 @@
       margin: auto 0 0;
       padding-top: 34px;
       color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-family: IBMPlexMono-Medium, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.65rem;
       line-height: 1.55;
     }
 
     @media (max-width: 820px) {
-      .intro {
-        grid-template-columns: 1fr;
-        gap: 22px;
-      }
-
       .workspace {
         grid-template-columns: 1fr;
       }
@@ -449,16 +392,8 @@
         padding-top: 18px;
       }
 
-      .edition {
-        display: none;
-      }
-
       main {
-        padding-top: 36px;
-      }
-
-      h1 {
-        font-size: clamp(2.75rem, 16vw, 4.5rem);
+        padding-top: 24px;
       }
 
       .field-grid,
@@ -492,19 +427,13 @@
     }
   </style>
 </head>
-<body>
+<body class="content">
   <div class="page-shell">
-    <header class="masthead">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        Model Measure
-      </div>
-      <div class="edition">GPT-2 architecture / 01</div>
-    </header>
+    <h1 class="site-header">GPT-2 Parameter Counter</h1>
+    <p class="support-link"><a href="/2026/07/llm-parameter-counts">Read the accompanying blog post</a></p>
 
     <main>
-      <section class="intro" aria-labelledby="page-title">
-        <h1 id="page-title">Build a model.<br><em>Count every weight.</em></h1>
+      <section class="intro" aria-label="About this calculator">
         <p class="intro-copy">Adjust the shape, vocabulary, and working context of a GPT-2-style transformer and see where every parameter lives.</p>
       </section>
 
